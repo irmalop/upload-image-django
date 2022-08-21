@@ -1,5 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from .models import User
+import cloudinary
 
 class  UserSerializer(ModelSerializer):
 
@@ -15,7 +16,8 @@ class  UserSerializer(ModelSerializer):
         user.name=validated_data.get('name', None)
         image = validated_data.get('image', None)
         if not image is None:
-            user.image = image
+            upload_data = cloudinary.uploader.upload(image, folder = f'media/photos_users/{validated_data.get("email")}')
+            user.image = upload_data["secure_url"]
         user.save()
         return user
     
@@ -24,4 +26,9 @@ class UserListSerializer(ModelSerializer):
         model = User
         exclude = ('is_staff', 'status_delete', 'is_active',
                    'is_superuser', 'password', 'user_permissions', 'groups',)
-        
+    
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response.pop('image')
+        response.setdefault('image', instance.image.public_id)
+        return response
